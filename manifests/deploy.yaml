@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: octo-version-sync-{{BRANCH}}
+  labels:
+    app: octo-version-sync
+    branch: "{{BRANCH}}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: octo-version-sync
+      branch: "{{BRANCH}}"
+  template:
+    metadata:
+      labels:
+        app: octo-version-sync
+        branch: "{{BRANCH}}"
+    spec:
+      containers:
+        - name: octo-version-sync
+          image: "{{REPO_URL}}:{{IMAGE_TAG}}"
+          args:
+            - "--store=cos"
+            - "--cos-bucket-url=$(COS_BUCKET_URL)"
+            - "--cos-secret-id=$(COS_SECRET_ID)"
+            - "--cos-secret-key=$(COS_SECRET_KEY)"
+            - "--cos-folder=version-sync"
+            - "--github-token=$(GITHUB_TOKEN)"
+            - "--interval=10m"
+            - "--listen=0.0.0.0:8099"
+            - "--trigger-token=$(TRIGGER_TOKEN)"
+            - "--components=/home/components.json"
+          ports:
+            - name: http
+              containerPort: 8099
+              protocol: TCP
+          env:
+            - name: COS_BUCKET_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-version-sync-secrets-{{BRANCH}}   # TODO: 运维创建此 Secret
+                  key: cos-bucket-url
+            - name: COS_SECRET_ID
+              valueFrom:
+                secretKeyRef:
+                  name: octo-version-sync-secrets-{{BRANCH}}
+                  key: cos-secret-id
+            - name: COS_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-version-sync-secrets-{{BRANCH}}
+                  key: cos-secret-key
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: octo-version-sync-secrets-{{BRANCH}}
+                  key: github-token
+            - name: TRIGGER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: octo-version-sync-secrets-{{BRANCH}}
+                  key: trigger-token
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      imagePullSecrets:
+        - name: tcr-image-xtiao                                # TODO: 确认新加坡集群的 imagePullSecret 名称
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: octo-version-sync-{{BRANCH}}
+  labels:
+    app: octo-version-sync
+    branch: "{{BRANCH}}"
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  selector:
+    app: octo-version-sync
+    branch: "{{BRANCH}}"

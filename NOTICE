@@ -1,0 +1,51 @@
+Octo Version Sync
+Copyright 2026 MININGLAMP Technology and the OCTO contributors
+
+Licensed under the Apache License, Version 2.0.
+See LICENSE for the full license text.
+
+--------------------------------------------------------------------
+Third-party Go module dependencies requiring attribution
+--------------------------------------------------------------------
+
+This product uses the following direct Go module dependency:
+
+MIT License:
+  - github.com/tencentyun/cos-go-sdk-v5
+    https://github.com/tencentyun/cos-go-sdk-v5
+    Tencent Cloud COS SDK for object storage.
+
+The following indirect dependencies are pulled in transitively:
+
+MIT License:
+  - github.com/clbanning/mxj
+  - github.com/mitchellh/mapstructure
+  - github.com/mozillazg/go-httpheader
+
+BSD-3-Clause:
+  - github.com/google/go-querystring
+
+For the exhaustive module-by-module license inventory, run
+`go-licenses csv ./...` or inspect each upstream's LICENSE file
+via `go.sum`.
+
+--------------------------------------------------------------------
+External data sources
+--------------------------------------------------------------------
+
+This product polls — but does not embed — the following external
+data sources via their public APIs:
+
+* GitHub Releases API
+  https://docs.github.com/en/rest/releases
+  Subject to GitHub Terms of Service. Optional GITHUB_TOKEN improves
+  rate limits but is not required for read access.
+
+* npm registry
+  https://registry.npmjs.org
+  Subject to npm Terms of Use. Read-only metadata access only.
+
+Version data is written to Tencent Cloud COS (Cloud Object Storage)
+under a path configured at runtime via `--cos-bucket-url` /
+`--cos-folder`. COS credentials are passed through environment
+variables and are never persisted in source.

@@ -1,0 +1,243 @@
+stages:
+  - build
+  - package
+  - sync
+  - deploy
+  - notify
+
+variables:
+  APP_NAME: octo-version-sync
+  REPOSITORY: tbj7-xtiao-tcr1.tencentcloudcr.com
+  CONTAINER_IMAGE: tbj7-xtiao-tcr1.tencentcloudcr.com/dmwork/octo-version-sync   # TODO: 确认 TCR 命名空间
+  FF_USE_FASTZIP: "true"
+  ROBOT_PUSH_MESSAGE: "enable"
+
+# ============================================================
+# build: MR 编译检查
+# ============================================================
+build:
+  stage: build
+  only:
+    - merge_requests
+  tags:
+    - tke-deepmining-runner                                                       # TODO: 确认新加坡 runner tag
+  image: tbj7-xtiao-tcr1.tencentcloudcr.com/xtiao-release/golang:1.20            # TODO: 确认 Go 1.26 镜像
+  variables:
+    GOPROXY: "https://goproxy.cn,direct"
+    GO111MODULE: "on"
+  script:
+    - go build ./...
+    - go test ./internal/ -v
+
+# ============================================================
+# 打包模板
+# ============================================================
+.package: &package
+  stage: package
+  tags:
+    - tke-deepmining-runner
+  image: tbj7-xtiao-tcr1.tencentcloudcr.com/xtiao-release/docker:20.10.17
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - i=0; while [ "$i" -lt 12 ]; do docker info && break; sleep 5; i=$(( i + 1 )) ; done
+    - echo "$HARBOR_PWD" | docker login $REPOSITORY -u 100028731872 --password-stdin
+  script:
+    - docker build -t ${PUSH_IMAGE_PATH} -t ${PUSH_IMAGE_LATEST} -f ./Dockerfile .
+    - docker push ${PUSH_IMAGE_PATH}
+    - docker push ${PUSH_IMAGE_LATEST}
+
+# ============================================================
+# develop 分支打包
+# ============================================================
+package_dev:
+  <<: *package
+  only:
+    - develop
+  variables:
+    PUSH_IMAGE_PATH: $CONTAINER_IMAGE:dev-$CI_PIPELINE_ID
+    PUSH_IMAGE_LATEST: "$CONTAINER_IMAGE:dev-latest"
+
+# ============================================================
+# main 分支打包
+# ============================================================
+package_main:
+  <<: *package
+  only:
+    - main
+  variables:
+    PUSH_IMAGE_PATH: $CONTAINER_IMAGE:main-$CI_PIPELINE_ID
+    PUSH_IMAGE_LATEST: "$CONTAINER_IMAGE:latest"
+
+# ============================================================
+# tag 打包（prod）
+# ============================================================
+package_tags:
+  <<: *package
+  only:
+    - tags
+  variables:
+    PUSH_IMAGE_PATH: $CONTAINER_IMAGE:$CI_COMMIT_TAG
+    PUSH_IMAGE_LATEST: "$CONTAINER_IMAGE:latest"
+
+# ============================================================
+# sync_code: 同步 deploy.yaml 到 deploy-files 仓库
+# ============================================================
+sync_code:
+  stage: sync
+  only:
+    - develop
+    - main
+    - tags
+  tags:
+    - tke-deepmining-runner
+  image: tbj7-xtiao-tcr1.tencentcloudcr.com/xtiao-release/alpine/git:v2.30.2
+  variables:
+    GIT_STRATEGY: clone
+    GIT_DEPTH: 1
+    CONTAINER_IMAGE: tbj7-xtiao-tcr1.tencentcloudcr.com/dmwork/octo-version-sync
+  script:
+    - git config --global user.email "ci@octo.ai"
+    - git config --global user.name "ci"
+    - |
+      set -e
+
+      if [[ -n "$CI_COMMIT_TAG" ]]; then
+        DEPLOY_ENV="prod"
+        IMAGE_TAG="$CI_COMMIT_TAG"
+      elif [[ "$CI_COMMIT_REF_NAME" == "main" ]]; then
+        DEPLOY_ENV="prod"
+        IMAGE_TAG="main-${CI_PIPELINE_ID}"
+      else
+        DEPLOY_ENV="dev"
+        IMAGE_TAG="dev-${CI_PIPELINE_ID}"
+      fi
+
+      TARGET_BRANCH="$APP_NAME-$DEPLOY_ENV"
+      echo "Git ref: ${CI_COMMIT_TAG:-$CI_COMMIT_REF_NAME} → Env: $DEPLOY_ENV → Deploy branch: $TARGET_BRANCH → Image tag: $IMAGE_TAG"
+
+      DEPLOY_DIR="deploy-repo"
+
+      if git clone -b $TARGET_BRANCH --depth 1 --single-branch https://__token__:$CODE_TOKEN@code.mlamp.cn/dm-fa/infra/deploy-files.git $DEPLOY_DIR; then
+        echo "Branch $TARGET_BRANCH exists"
+      else
+        git clone --depth 1 https://__token__:$CODE_TOKEN@code.mlamp.cn/dm-fa/infra/deploy-files.git $DEPLOY_DIR
+        cd $DEPLOY_DIR
+        git checkout -b $TARGET_BRANCH
+        cd ..
+      fi
+
+      mkdir -p $DEPLOY_DIR/manifests
+      cp manifests/deploy.yaml $DEPLOY_DIR/manifests/deploy.yaml
+
+      cd $DEPLOY_DIR
+      sed -i "s|{{BRANCH}}|${DEPLOY_ENV}|g" manifests/deploy.yaml
+      sed -i "s|{{REPO_URL}}|${CONTAINER_IMAGE}|g" manifests/deploy.yaml
+      sed -i "s/{{IMAGE_TAG}}/${IMAGE_TAG}/g" manifests/deploy.yaml
+
+      git add manifests/deploy.yaml
+      if git diff --cached --quiet; then
+        echo "No changes, skipping..."
+        exit 0
+      fi
+      git commit -m "Update image to ${IMAGE_TAG} for ${DEPLOY_ENV}"
+      git push --force https://__token__:$CODE_TOKEN@code.mlamp.cn/dm-fa/infra/deploy-files.git HEAD:$TARGET_BRANCH
+
+# ============================================================
+# argocd_sync: 触发 ArgoCD 同步
+# ============================================================
+argocd_sync:
+  stage: deploy
+  only:
+    - develop
+    - main
+    - tags
+  tags:
+    - tke-deepmining-runner
+  image: tbj7-xtiao-tcr1.tencentcloudcr.com/xtiao-release/alpine/curl:8.11.1
+  variables:
+    GIT_STRATEGY: none
+    ARGOCD_SERVER: argocd-server.argocd:80                                         # TODO: 确认新加坡集群的 ArgoCD 地址
+  script: |
+    set -e
+
+    if [[ -n "$CI_COMMIT_TAG" ]]; then
+      echo "Tag build: skipping auto sync for prod"
+      exit 0
+    elif [[ "$CI_COMMIT_REF_NAME" == "main" ]]; then
+      ARGOCD_APP="octo-version-sync-prod"                                          # TODO: 确认 ArgoCD 应用名
+    else
+      ARGOCD_APP="octo-version-sync-dev"                                           # TODO: 确认 ArgoCD 应用名
+    fi
+
+    echo "Syncing ArgoCD app: $ARGOCD_APP"
+    SYNC_RESP=$(curl -s -w "\n%{http_code}" -X POST \
+      "http://$ARGOCD_SERVER/api/v1/applications/$ARGOCD_APP/sync" \
+      -H "Authorization: Bearer $ARGOCD_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{"prune":false,"dryRun":false}')
+    HTTP_CODE=$(echo "$SYNC_RESP" | tail -1)
+    echo "Sync HTTP status: $HTTP_CODE"
+
+    if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "204" ]; then
+      echo "ArgoCD sync failed with HTTP $HTTP_CODE"
+      exit 1
+    fi
+    echo "ArgoCD sync triggered ✅"
+
+# ============================================================
+# 成功通知
+# ============================================================
+notify-job-when-success:
+  stage: notify
+  tags:
+    - tke-deepmining-runner
+  only:
+    - develop
+    - main
+    - tags
+  when: on_success
+  image: tbj7-xtiao-tcr1.tencentcloudcr.com/xtiao-release/alpine/curl:8.11.1
+  variables:
+    GIT_STRATEGY: none
+  script: |
+    if [[ "$ROBOT_PUSH_MESSAGE" == "disable" ]]; then exit 0; fi
+    BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    if [[ -n "$CI_COMMIT_TAG" ]]; then
+      MESSAGE="🎉 发布成功 | octo-version-sync [Prod]\n📌 版本: $CI_COMMIT_TAG\n⏱️ $BUILD_DATE\n📝 $CI_COMMIT_SHORT_SHA"
+    else
+      MESSAGE="✅ 构建成功 | octo-version-sync [$CI_COMMIT_REF_NAME]\n⏱️ $BUILD_DATE\n📝 $CI_COMMIT_SHORT_SHA"
+    fi
+    CHANGE_LOG=$(echo "$CI_COMMIT_MESSAGE" | head -1)
+    MESSAGE="$MESSAGE\n📋 $CHANGE_LOG"
+    if [[ -n "$WECOM_WEBHOOK" ]]; then
+      curl -s -X POST "$WECOM_WEBHOOK" \
+        -H "Content-Type: application/json" \
+        -d "{\"msgtype\":\"text\",\"text\":{\"content\":\"$(echo -e $MESSAGE)\"}}"
+    fi
+
+# ============================================================
+# 失败通知
+# ============================================================
+notify-job-when-fail:
+  stage: notify
+  tags:
+    - tke-deepmining-runner
+  only:
+    - develop
+    - main
+    - tags
+  when: on_failure
+  image: tbj7-xtiao-tcr1.tencentcloudcr.com/xtiao-release/alpine/curl:8.11.1
+  variables:
+    GIT_STRATEGY: none
+  script: |
+    if [[ "$ROBOT_PUSH_MESSAGE" == "disable" ]]; then exit 0; fi
+    BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    MESSAGE="❌ 构建失败 | octo-version-sync [$CI_COMMIT_REF_NAME]\n⏱️ $BUILD_DATE\n📝 $CI_COMMIT_SHORT_SHA\n🔗 $CI_PIPELINE_URL"
+    if [[ -n "$WECOM_WEBHOOK" ]]; then
+      curl -s -X POST "$WECOM_WEBHOOK" \
+        -H "Content-Type: application/json" \
+        -d "{\"msgtype\":\"text\",\"text\":{\"content\":\"$(echo -e $MESSAGE)\"}}"
+    fi

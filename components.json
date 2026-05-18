@@ -1,0 +1,8 @@
+[
+  {"name": "octo-daemon", "source": "github:Mininglamp-OSS/octo-daemon-cli"},
+  {"name": "claude", "source": "github:anthropics/claude-code"},
+  {"name": "codex", "source": "github:openai/codex"},
+  {"name": "hermes", "source": "github:NousResearch/hermes-agent"},
+  {"name": "openclaw", "source": "npm:openclaw"},
+  {"name": "openclaw-channel-dmwork", "source": "npm:openclaw-channel-dmwork"}
+]
