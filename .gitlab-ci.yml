@@ -1,3 +1,19 @@
+# ═══════════════════════════════════════════════════════════════════
+# CI/CD topology — please read before editing
+# ═══════════════════════════════════════════════════════════════════
+# Source of truth:  https://github.com/Mininglamp-OSS/octo-version-sync
+# CI/CD runner:     codex.mlamp.cn/dmwork/octo-version-sync (GitLab EE)
+# Sync mechanism:   GitLab Pull Mirror (every ~5 min from GitHub)
+#
+# Code changes → push to GitHub. GitLab pulls automatically and
+# triggers this pipeline. Do NOT push to GitLab directly — those
+# commits get overwritten by the next mirror pull.
+#
+# Why double-repo: GitHub hosts canonical code + lightweight PR CI
+# (.github/workflows/ci.yml). GitLab owns TCR image build + ArgoCD
+# deploy because internal infra (TCR namespace, deploy-files repo,
+# K8s secrets) lives behind the VPN and stays on GitLab runners.
+# ═══════════════════════════════════════════════════════════════════
 stages:
   - build
   - package

@@ -99,7 +99,7 @@ Default component set (see `components.json`):
 | `codex` | `github:openai/codex` | OpenAI Codex CLI |
 | `hermes` | `github:NousResearch/hermes-agent` | Hermes Agent |
 | `openclaw` | `npm:openclaw` | OpenClaw runtime (npm) |
-| `openclaw-channel-dmwork` | `npm:openclaw-channel-dmwork` | OpenClaw channel plugin (legacy npm name; the rebranded plugin lives at `clawhub:octo`) |
+| `openclaw-channel-octo` | `npm:openclaw-channel-octo` | OpenClaw channel plugin (the rebranded plugin; also published to ClawHub as `clawhub:octo`) |
 
 Add a component by editing `components.json` — the next scan cycle
 picks it up automatically (no redeploy needed).
@@ -151,6 +151,27 @@ Alpine base):
 ```bash
 docker build -t octo-version-sync:dev .
 ```
+
+## 🔀 Repository topology
+
+`octo-version-sync` lives in two places. They are not equal peers — one
+is the canonical source, the other is a runner mirror:
+
+| Repository | Role | What you do here |
+|---|---|---|
+| **`github.com/Mininglamp-OSS/octo-version-sync`** | **Source of truth** (this repo) | Edit code, open PRs, review |
+| `codex.mlamp.cn/dmwork/octo-version-sync` (GitLab EE) | Pull mirror + CI/CD runner | Watch pipeline logs |
+
+The GitLab project pulls from GitHub on a ~5 min interval, triggers
+`.gitlab-ci.yml` (TCR image build → deploy-files render → ArgoCD sync).
+**Never push directly to the GitLab side** — those commits get
+overwritten on the next mirror pull.
+
+Why split the two: GitHub hosts canonical code and lightweight PR CI
+(`.github/workflows/ci.yml` — `go build` + `go test`). The full
+build-and-deploy pipeline stays on GitLab because the internal infra
+it touches (TCR namespace, deploy-files repo, K8s secrets) lives
+behind the VPN.
 
 ## 🔗 OCTO Ecosystem
 
