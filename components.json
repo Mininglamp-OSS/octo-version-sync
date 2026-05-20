@@ -4,5 +4,5 @@
   {"name": "codex", "source": "github:openai/codex"},
   {"name": "hermes", "source": "github:NousResearch/hermes-agent"},
   {"name": "openclaw", "source": "npm:openclaw"},
-  {"name": "openclaw-channel-octo", "source": "npm:openclaw-channel-octo"}
+  {"name": "octo", "source": "github:Mininglamp-OSS/openclaw-channel-octo"}
 ]

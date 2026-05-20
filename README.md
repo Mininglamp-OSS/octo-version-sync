@@ -99,7 +99,7 @@ Default component set (see `components.json`):
 | `codex` | `github:openai/codex` | OpenAI Codex CLI |
 | `hermes` | `github:NousResearch/hermes-agent` | Hermes Agent |
 | `openclaw` | `npm:openclaw` | OpenClaw runtime (npm) |
-| `openclaw-channel-octo` | `npm:openclaw-channel-octo` | OpenClaw channel plugin (the rebranded plugin; also published to ClawHub as `clawhub:octo`) |
+|  `octo` | `github:Mininglamp-OSS/openclaw-channel-octo` | OpenClaw channel plugin (the rebranded plugin; also published to ClawHub as `clawhub:octo`) |
 
 Add a component by editing `components.json` — the next scan cycle
 picks it up automatically (no redeploy needed).

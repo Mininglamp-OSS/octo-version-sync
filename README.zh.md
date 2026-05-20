@@ -96,7 +96,7 @@ curl -XPOST \
 | `codex` | `github:openai/codex` | OpenAI Codex CLI |
 | `hermes` | `github:NousResearch/hermes-agent` | Hermes Agent |
 | `openclaw` | `npm:openclaw` | OpenClaw 运行时（npm） |
-| `openclaw-channel-octo` | `npm:openclaw-channel-octo` | OpenClaw channel 插件（改名后的版本；同时也发布到 ClawHub 上的 `clawhub:octo`） |
+|  `octo` | `github:Mininglamp-OSS/openclaw-channel-octo` | OpenClaw channel 插件（改名后的版本；同时也发布到 ClawHub 上的 `clawhub:octo`） |
 
 新增组件只需编辑 `components.json` —— 下一轮扫描自动生效，无需重启。
 

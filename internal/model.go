@@ -40,5 +40,5 @@ var DefaultComponents = []ComponentDef{
 	{Name: "claude", Source: "github:anthropics/claude-code"},
 	{Name: "hermes", Source: "github:NousResearch/hermes-agent"},
 	{Name: "openclaw", Source: "npm:openclaw"},
-	{Name: "openclaw-channel-octo", Source: "npm:openclaw-channel-octo"},
+	{Name: "octo", Source: "github:Mininglamp-OSS/openclaw-channel-octo"},
 }
