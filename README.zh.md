@@ -96,7 +96,7 @@ curl -XPOST \
 | `codex` | `github:openai/codex` | OpenAI Codex CLI |
 | `hermes` | `github:NousResearch/hermes-agent` | Hermes Agent |
 | `openclaw` | `npm:openclaw` | OpenClaw 运行时（npm） |
-| `openclaw-channel-dmwork` | `npm:openclaw-channel-dmwork` | OpenClaw channel 插件（npm 老名字；改名后的版本走 `clawhub:octo`） |
+|  `octo` | `github:Mininglamp-OSS/openclaw-channel-octo` | OpenClaw channel 插件（改名后的版本；同时也发布到 ClawHub 上的 `clawhub:octo`） |
 
 新增组件只需编辑 `components.json` —— 下一轮扫描自动生效，无需重启。
 
@@ -146,6 +146,27 @@ make build
 ```bash
 docker build -t octo-version-sync:dev .
 ```
+
+## 🔀 仓库拓扑
+
+`octo-version-sync` 同时存在于两个地方，**不是对等关系** —— 一个是
+代码来源真相，另一个只是触发 CI/CD 的镜像：
+
+| 仓库 | 角色 | 在这里做什么 |
+|---|---|---|
+| **`github.com/Mininglamp-OSS/octo-version-sync`** | **Source of truth**（本仓） | 写代码 / 开 PR / review |
+| `codex.mlamp.cn/dmwork/octo-version-sync`（GitLab EE） | Pull mirror + CI/CD runner | 看 pipeline 日志 |
+
+GitLab 那侧每 ~5 分钟从 GitHub Pull Mirror 一次，触发
+`.gitlab-ci.yml`（TCR 镜像构建 → deploy-files 渲染 → ArgoCD 同步）。
+**不要往 GitLab 那侧直接 push** —— 那些 commit 会被下一次 mirror pull
+覆盖掉。
+
+为什么拆两边：GitHub 承载代码 + 轻量 PR CI
+（`.github/workflows/ci.yml` —— `go build` + `go test`）。完整的
+build & deploy 流水线留在 GitLab，因为它依赖的内部基础设施
+（TCR namespace / deploy-files 仓 / K8s secrets）都在 VPN 内、跑在
+GitLab runner 上。
 
 ## 🔗 OCTO 生态
 
