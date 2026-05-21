@@ -1,0 +1,24 @@
+# Automatically add new issues and PRs to the org-level GitHub Project.
+name: Auto add to project
+
+on:
+  issues:
+    types: [opened]
+  # pull_request_target runs in the context of the base repo and retains write
+  # access even for fork PRs — required because the reusable workflow needs a
+  # privileged token (PROJECT_TOKEN) to add items to the org-level project.
+  #
+  # Security: this workflow does NOT check out or execute any code from the PR
+  # branch; it only forwards event metadata to the reusable workflow, which
+  # performs only API calls against the base repo. This matches the pattern
+  # used by labeler.yml and octo-pr-feed.yml.
+  pull_request_target: # zizmor: ignore[dangerous-triggers] metadata-only automation; no PR code executed
+    types: [opened]
+
+permissions: {}
+
+jobs:
+  add-to-project:
+    uses: Mininglamp-OSS/.github/.github/workflows/auto-add-to-project.yml@main
+    secrets:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
