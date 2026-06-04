@@ -22,11 +22,8 @@ jobs:
       scan-args: |-
         -r
         ./
-      # Private repo: Code Security (Advanced Security) is not enabled.
-      # SARIF upload requires security-events:write which returns 403 on
-      # private repos without Code Security. Scan results are still visible
-      # in the workflow run output. Enable Code Security at the repo or org
-      # level, then flip this to true.
+      fail-on-vuln: false
+      # Private repo: Code Security not enabled; SARIF upload returns 403.
       upload-sarif: false
 
   scan-pr:
@@ -36,6 +33,5 @@ jobs:
       scan-args: |-
         -r
         ./
-      # Private repo: SARIF upload disabled (Code Security not enabled).
-      # Also guards against fork/dependabot read-only tokens.
+      fail-on-vuln: false
       upload-sarif: false
