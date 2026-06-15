@@ -23,6 +23,21 @@
 
 ---
 
+> ## ⚠️ 已退役(2026-06)
+>
+> **octo-version-sync 已退役,不再部署运行。** 它的唯一消费者 —— octo-fleet 的
+> COS 版本同步器(`modules/runtime/version_sync.go`)—— 已移除。fleet 的
+> `runtime_latest_version` 表现改为**人工维护**,通过 internal 端点
+> `POST /v1/internal/runtime-latest-versions`(鉴权 header `X-Runtime-Admin-Token`,
+> 值为 `OCTO_RUNTIME_ADMIN_TOKEN`)写入。
+>
+> - 退役详情(最后产物来源、components 差异、部署下线清单):见 [`docs/DEPRECATION.md`](docs/DEPRECATION.md)
+> - 人工维护版本/release_meta 的操作手册:见 [`docs/MANUAL-VERSION-SOP.md`](docs/MANUAL-VERSION-SOP.md)
+>
+> 本仓库代码保留作历史参考,**不接受新功能**。
+
+---
+
 > 🌐 **语言**: [English](README.md) · **简体中文**
 
 # 🔄 Octo Version Sync（简体中文）
