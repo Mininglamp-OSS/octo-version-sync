@@ -27,7 +27,7 @@
 >
 > **octo-version-sync 已退役,不再部署运行。** 它的唯一消费者 —— octo-fleet 的
 > COS 版本同步器(`modules/runtime/version_sync.go`)—— 已移除。fleet 的
-> `runtime_latest_version` 表现改为**人工维护**,通过 internal 端点
+> `runtime_latest_version` 表已改为**人工维护**,通过 internal 端点
 > `POST /v1/internal/runtime-latest-versions`(鉴权 header `X-Runtime-Admin-Token`,
 > 值为 `OCTO_RUNTIME_ADMIN_TOKEN`)写入。
 >
