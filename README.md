@@ -242,3 +242,4 @@ Apache License 2.0 — see [LICENSE](LICENSE) for the full text and
 <p align="center">
   <sub>Made with 🐙 by <b>OCTO Contributors</b> · <a href="https://github.com/Mininglamp-OSS">Mininglamp-OSS</a></sub>
 </p>
+<!-- p2 smoke test marker -->
