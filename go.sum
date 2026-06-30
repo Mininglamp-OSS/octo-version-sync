@@ -16,7 +16,7 @@ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.563/go.mod h1:7sCQWVkxcsR38nffDW057DRGk8mUjK1Ing/EFOK8s8Y=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/kms v1.0.563/go.mod h1:uom4Nvi9W+Qkom0exYiJ9VWJjXwyxtPYTkKkaLMlfE0=
-github.com/tencentyun/cos-go-sdk-v5 v0.7.73 h1:uFfgp1A7cQaAGR6QP9DsIkoEQ67b8ewj5r1RV6XB540=
-github.com/tencentyun/cos-go-sdk-v5 v0.7.73/go.mod h1:STbTNaNKq03u+gscPEGOahKzLcGSYOj6Dzc5zNay7Pg=
+github.com/tencentyun/cos-go-sdk-v5 v0.7.74 h1:YCsGhIK+Q5vMcmAiQqPuMyhSQ3zN1p7U+dhlHQD++6c=
+github.com/tencentyun/cos-go-sdk-v5 v0.7.74/go.mod h1:STbTNaNKq03u+gscPEGOahKzLcGSYOj6Dzc5zNay7Pg=
 github.com/tencentyun/qcloud-cos-sts-sdk v0.0.0-20250515025012-e0eec8a5d123/go.mod h1:b18KQa4IxHbxeseW1GcZox53d7J0z39VNONTxvvlkXw=
 golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
